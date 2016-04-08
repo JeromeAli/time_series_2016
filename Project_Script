@@ -1,0 +1,93 @@
+setwd("C:/Users/Jerome Jackson/Google Drive/School Work 3/Second Semester/Time Series/TIME Series Directory/Time Series Project/2016")
+library(forecast)
+library(xlsx)
+library("tseries", lib.loc="~/R/win-library/3.2")
+library(MASS)
+library(Hmisc)
+library(TSA)
+
+
+# ImPORTING DATA
+index <- read.xlsx("project2016.xlsx",  header= F, sheetName="Grp11", startRow= 5, endRow=115)
+y2 = index[,2]
+
+#cONVERTING DATA INTO TIME SERIES
+ts_y2a <- ts(y2, frequency=12, start=c(1963,4), end= c(1971,7))
+ts_y2b <- ts(y2)
+
+
+#PLOT OF SERIES 1
+
+win.graph(width=4.875,height=3,pointsize=8)
+plot.ts(ts_y2a,xlab="Years",ylab= "Scholes index for NYSE",col=2)
+title("Figure 1: Scholes index for NYSE",cex.main=0.9)
+mtext("for period, April 1963 to July 1971",cex=0.9)
+#minor.tick(nx=2, ny=0, tick.ratio=.5)
+
+#PLOT OF SERIES 2
+win.graph(width=4.875,height=3,pointsize=8)
+plot.ts(ts_y2b,xlab="Years",ylab= "Scholes index for NYSE",col=2)
+title("Figure 1: Scholes index for NYSE",cex.main=0.9)
+mtext("for period, April 1963 to July 1971",cex=0.9)
+#minor.tick(nx=20, ny=0, tick.ratio=.5)
+#grid(NA, 100, lwd = 2, equilogs = FALSE) 
+
+#seasonplot(ts_y2a)
+#monthplot(ts_y2a)
+
+#- Check for Stationarity
+adf.test((ts_y2b), alternative = "stationary") # p-value < 5% means stationarity
+kpss.test((ts_y2b)) # p-value > 5% means stationarity
+
+
+#Autocorrellation 
+win.graph(width=4.875,height=3,pointsize=8)
+acf(ts_y2b, lag.max = 20 , plot =T) #MA(1)
+
+#Partial Autocorrelation
+win.graph(width=4.875,height=3,pointsize=8)
+pacf(ts_y2b,lag.max =20, plot=T) # AR(2)
+
+
+# Suggested ARIMA - ARMA(2,0) and ARMA(0,1)
+
+mod=Arima(ts_y2b,order=c(0,0,1))
+summary(mod)
+# AIC=-374.2   AICc=-373.95   BIC=-366.38
+
+mod2=Arima(ts_y2b,order=c(1,0,1))
+summary(mod2)
+# AIC=-372.21   AICc=-371.78   BIC=-361.78
+
+mod3=Arima(ts_y2b,order=c(1,0,0))
+summary(mod3)
+#AIC=-374.2   AICc=-373.95   BIC=-366.39
+
+mod4=Arima(ts_y2b,order=c(2,0,1))
+summary(mod4)
+#AIC=-370.24   AICc=-369.6   BIC=-357.21
+
+mod5=Arima(ts_y2b,order=c(2,0,0))
+summary(mod5)
+#AIC=-372.21   AICc=-371.79   BIC=-361.79
+
+
+
+#We Choose Model 3
+
+
+#************************* DIAGNOSTICS OF STATIONARY MODELS ***********************************
+
+res1=mod$residuals
+v1=sd(res1)
+sres1=res1
+
+par(mfrow=c(2,2))
+plot(sres1,xlab="Days",ylab="Standardised Residuals",main="Percentage Daily Returns",cex.main=0.85)
+qqnorm(sres1)
+qqline(sres1)
+Acf(sres1,main="Standardised Residuals",cex.main=0.7)
+Pacf(sres1,main="Standardised Residuals",cex.main=0.7)
+
+tsdisplay(sres1)
+Box.test(sres1, lag=20, fitdf=1, type="Ljung") 

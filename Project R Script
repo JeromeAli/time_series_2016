@@ -1,0 +1,135 @@
+setwd("C:/Users/Jerome Jackson/Google Drive/School Work 3/Second Semester/Time Series/TIME Series Directory/Time Series Project/2016")
+library(forecast)
+library(xlsx)
+library("tseries", lib.loc="~/R/win-library/3.2")
+library(MASS)
+library(Hmisc)
+library(TSA)
+library(rugarch)
+
+# ImPORTING DATA
+index <- read.xlsx("project2016.xlsx",  header= F, sheetName="Grp11", startRow= 5, endRow=115)
+y2 = index[,2]
+
+#cONVERTING DATA INTO TIME SERIES
+ts_y2a <- ts(y2, frequency=12, start=c(1963,4), end= c(1971,7))
+ts_y2b <- ts(y2)
+
+
+BoxCox.ar(ts_y2b+.5, lambda = seq(-2, 4, 0.1), plotit = T)
+ts_y2b <- BoxCox(ts_y2b,2)
+
+#PLOT OF SERIES 1
+
+win.graph(width=4.875,height=3,pointsize=8)
+plot.ts(ts_y2a,xlab="Years",ylab= "Scholes index for NYSE",col=2)
+title("Figure 1: Scholes index for NYSE",cex.main=0.9)
+mtext("for period, April 1963 to July 1971",cex=0.9)
+#minor.tick(nx=2, ny=0, tick.ratio=.5)
+
+#PLOT OF SERIES 2
+win.graph(width=4.875,height=3,pointsize=8)
+plot.ts((ts_y2b),xlab="Months",ylab= "Scholes index for NYSE",col="blue")
+title("Figure 3 (Tranformed Data): Scholes index for NYSE",cex.main=0.9)
+mtext("for period, April 1963 to July 1971",cex=0.9)
+#minor.tick(nx=20, ny=0, tick.ratio=.5)
+#grid(NA, 100, lwd = 2, equilogs = FALSE) 
+
+
+win.graph(width=4.875,height=3,pointsize=8)
+plot(ts_y2b, type= "p", xlab="Months",ylab= "Scholes index for NYSE")
+title("Figure 2 (b) (Scatterplot: Scholes index for NYSE",cex.main=0.9)
+mtext("for period, April 1963 to July 1971",cex=0.9)
+#seasonplot(ts_y2a+10)
+monthplot(ts_y2a)
+
+#- Check for Stationarity
+adf.test((ts_y2b), alternative = "stationary") # p-value < 5% means stationarity
+kpss.test((ts_y2b)) # p-value > 5% means stationarity
+
+
+#Autocorrellation 
+win.graph(width=4.875,height=3,pointsize=8)
+title("Auto-accumulation Function of Transformed data",cex.main=0.9)
+acf((ts_y2b), lag.max = 20 , plot =T, main = "Corellogram of Transformed Time Series") #MA(1)
+
+#Partial Autocorrelation
+win.graph(width=4.875,height=3,pointsize=8)
+pacf((ts_y2b),lag.max =20, plot=T, main = "Partial Corellogram of Transformed Time Series") # AR(2)
+
+
+# Suggested ARIMA - ARMA(1,0) and ARMA(0,1)
+auto.arima((ts_y2b), trace= TRUE, ic ="aicc", approximation = T, stepwise = T)
+Scoles_Index_Tranformed <- ts_y2b
+
+mod=Arima(Scoles_Index_Tranformed,order=c(1,0,0))
+summary(mod)
+# AIC=-374.2   AICc=-373.95   BIC=-366.38
+
+mod2=Arima(Scoles_Index_Tranformed,order=c(1,0,1))
+summary(mod2)
+# AIC=-372.21   AICc=-371.78   BIC=-361.78
+
+mod3=Arima(Scoles_Index_Tranformed,order=c(0,0,1))
+summary(mod3)
+#AIC=-374.2   AICc=-373.95   BIC=-366.39
+
+#mod4=Arima(ts_y2b,order=c(2,0,1))
+#summary(mod4)
+#AIC=-370.24   AICc=-369.6   BIC=-357.21
+
+#mod4=Arima(ts_y2b,order=c(2,0,0))
+#summary(mod5)
+#AIC=-372.21   AICc=-371.79   BIC=-361.79
+
+mod4=Arima(Scoles_Index_Tranformed,order=c(0,0,0))
+summary(mod4)
+#AIC=-1069.27   AICc=-1069.15   BIC=-1064.06
+
+
+
+#We Choose Model 1
+
+
+#************************* DIAGNOSTICS OF STATIONARY MODELS ***********************************
+\
+
+
+res1=mod4$residuals
+
+sres1= (res1-mean(res1))/sd(res1)
+
+par(mfrow=c(2,2))
+plot(sres1,xlab="Months",ylab="Standardised Residuals",main="Scholed Index Transformed",cex.main=0.85)
+qqnorm(sres1)
+qqline(sres1)
+
+hist(sres1, breaks="FD", xlab="Residuals", 
+     main="Histogram of residuals", frequency = F)
+x <- -50:50
+lines(x, 560*dnorm(x,0,sd(sres1)),col=2)
+
+Acf(sres1,main="Standardised Residuals",cex.main=0.7, plot = T)
+Pacf(sres1,main="Standardised Residuals",cex.main=0.7)
+
+tsdisplay(sres1)
+Box.test(sres1, lag=20, fitdf=1, type="Ljung") 
+
+tsdiag(mod3)
+
+#******************************************ForeCasting ***************************8
+
+ft=forecast.Arima(mod3,h=5,level=90)
+summary(ft)
+plot(ft,xlab="Months",ylab="Shole Index")
+
+
+
+plot(ft,shaded=F,pi.col=2,pi.lty=8,xlab="years")
+
+
+
+plot(ft,shaded=F,pi.col=2,pi.lty=8,xlab="Months",ylab="Shole Index")
+
+#title("Forecasts from ARMA(0,0,0)",cex.main=0.85)
+abline(v=100,lty="dotted")

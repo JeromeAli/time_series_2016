@@ -1,0 +1,136 @@
+						#MARCH 9
+					#Simulating Random Walk model	
+		
+mu=.5   #Drift
+#par(mfrow=c(5,2))
+set.seed(540)
+e=rnorm(250)
+y.rwd=mu+cumsum(e)
+ts=ts.plot(y.rwd,lwd=2,col="blue",main="Random Walk with Drift")
+#abline(h=0)
+
+y.rw=cumsum(e)
+	#Lines Allow graphs to overlay
+#lines(y.rw[200:250],col="red")#[200:250] gives a closer view of the last 50 area of the graph
+lines(y.rw,col="red")
+#ts=ts.plot(y.rw,lwd=2,col="blue",main="Random Walk")
+
+set.seed(123)
+zt=rnorm(60,0.5,0.3)
+ts.plot(zt,ylab="Price",col="green",main="White Noise with mean 0.5 and sd 0.3")
+		
+		#Simulating Moving Average
+set.seed(3450)
+ma1=list(ma=0.7)
+ma1.sim=arima.sim(model=ma1,n=500,innov=rnorm(500,0,0.1))
+#ts.plot(ma1.sim,col=3,lty=2)
+ma1.acf=ARMAacf(ar=0,ma=0.7,lag.max=10) #Shows Lag
+#ma1.acf
+#plot(0:10,ma1.acf,type="h",col=2)
+
+n=50
+ma2.sim=arima.sim(model=list(ma=c(0.7,.1)),n)
+#plot(ma2.sim,type="o")
+#abline(h=0,lty=2)
+ma2.acf=ARMAacf(ar=0,ma=c(0.7,.1),lag.max=n) #Shows Lag
+#plot(0:n,ma2.acf,type="h",col=2)
+
+ar1=list(ar=.3)
+ar1.sim=arima.sim(model=ar1,n=100)
+#ts.plot(ar1.sim,col=3,lty=2)
+ar1.acf=ARMAacf(ar=.3,ma=0,lag.max=10)
+#plot(0:10,ar1.acf,type="h",col=2)
+
+ar2.sim=arima.sim(model=list(ar=c(0.5,-.2)),n=100)
+ar2.acf=ARMAacf(ar=c(0.5,-.2),ma=0,lag.max=10) #Shows Lag
+#ts.plot(ar2.sim,col="purple",lty=4)
+#plot(0:10,ar1.acf,type="h",col=2)
+
+king=read.table("kings.death.txt")
+y=ts(king)
+win.graph(width=15,height=15,pointsize=8)
+#par(mfrow=c(3,2))
+#plot(y,ylab="Age of death",main="Age of Death of 42 kings in UK")
+ydif=diff(y,diff=1)
+#plot(ydif,type="p",main="First Difference")
+#abline(h=0)
+#acf(y,lag.max=15,plot=F)#Gives Values
+#acf(y,lag.max=15)#Gives correlogram
+#acf(ydif,lag.max=15)
+#pacf(ydif,lag.max=15)
+#for acf we use the MA model and for the pacf we use the AR model. the AR(3) is used since
+#there are 3 spikes out of the band. Similar for the MA model under the acf.
+	
+						#MARCH 16
+
+
+#Load package forecast first
+mod=Arima(y,order=c(3,1,0)) #AR(3) model p=3 is from AR, d=1 for Dif, q=0 is MA component 
+mod2=Arima(y,order=c(0,1,1)) #MA(1)
+mod3=Arima(y,order=c(3,1,1)) 
+mod4=Arima(y,order=c(1,1,1)) 
+#tsdiag(mod4)
+box=Box.test(mod4$residuals,lag=20,type="Ljung-Box")
+mod4.forecast=forecast.Arima(mod4,h=5) 
+
+#
+volcani=read.table("volcani.dust.veil.txt")
+#names(volcani)=c("Year","Index")  
+skirt=read.table("skirts.txt")
+names(skirt)=c("Year","Diameter")
+#attach(volcani)
+
+vs=ts(volcani[,-1],start=c(1500))
+#par(mfrow=c(2,2))
+#plot(vs,type="p")
+#acf(vs)
+#pacf(vs)
+m1=Arima(vs,order=c(0,0,3))
+m2=Arima(vs,order=c(2,0,0))
+
+			#March 23
+
+par(mfrow=c(5,2))
+x=skirt[,-1]
+y=ts(x,start=1866,end=1911,freq=1)
+plot(y,xlab="years",ylab="diameter inches",main="skirt diameter")
+Acf(y,)
+dy=diff(y,1)
+plot(dy)
+acf(dy)
+Pacf(dy)
+
+d2y=diff(dy,1)
+plot(d2y,type="p")
+abline(h=0)
+acf(d2y)
+Pacf(d2y)
+tsdisplay(d2y)
+
+#We choose m3
+m1=Arima(y,order=c(0,2,1))
+m2=Arima(y,order=c(1,2,0))
+m3=Arima(y,order=c(2,2,0))
+m4=Arima(y,order=c(1,2,1))
+m5=Arima(y,order=c(2,2,1))
+
+#model diagnostics
+mod=Arima(y,order=c(1,2,0))
+resd=mod$residuals
+sresd=(resd-mean(resd))/sd(resd)
+tsdisplay(resd)
+Box.test(resd,type="Ljung-Box",fitdf=1,lag=20)
+par(mfrow=c(2,2))
+plot(sresd,ylab="Standardised Resd",main="Diameter in Inches")
+qqnorm(sresd)
+qqline(sresd)
+Acf(sresd,main="Standardised Residuals",ylim=c(-.6,.4))
+Pacf(sresd,main="Standardised Residuals",ylim=c(-.6,.4))
+confint(mod)
+
+#forcasting
+ft=forecast.Arima(mod,h=5,level=90) #level is for the level of p.i
+plot(ft)
+plot(ft,include=50,shaded=F,pi.col=2,pi.lty=8,xlab="years",ylab="diameters")
+title("Forecasts from ARMA(1,2,0)",cex.main=0.85)
+abline(v=1911,lty="dotted")

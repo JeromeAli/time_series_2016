@@ -1,11 +1,11 @@
-setwd("C:/Users/Jerome Jackson/Google Drive/School Work 3/Second Semester/Time Series/TIME Series Directory/Time Series Project/2016")
-library(forecast)
-library(xlsx)
-library("tseries", lib.loc="~/R/win-library/3.2")
-library(MASS)
-library(Hmisc)
-library(TSA)
-library(rugarch)
+#setwd("C:/Users/Username/"
+library(forecast) #install
+library(xlsx)# Install
+library("tseries", lib.loc="~/R/win-library/3.2") #install
+library(MASS) #install
+library(Hmisc) #install
+library(TSA) #install
+library(rugarch) #install - Not Use
 
 # ImPORTING DATA
 index <- read.xlsx("project2016.xlsx",  header= F, sheetName="Grp11", startRow= 5, endRow=115)
